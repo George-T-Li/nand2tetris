@@ -6,8 +6,6 @@
 // Multiplies R0 and R1 and stores the result in R2.
 // (R0, R1, R2 refer to RAM[0], RAM[1], and RAM[2], respectively.)
 
-// Put your code here.
-
 @R2         // R2 refers to a location in memory
 M = 0       // sets R2 to 0
 @count      // count refers to a location in memory
@@ -32,4 +30,3 @@ M = 0       // sets count to 0
 (END)
     @END
     0;JMP   // unconditional jump to END
-
