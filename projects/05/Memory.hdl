@@ -28,4 +28,17 @@ CHIP Memory {
 
     PARTS:
     // Put your code here:
+    // Decide where to load
+    DMux4Way(in = load, sel = address[13..14], a = RAM08, b = RAM916, c = loadScreen, d = key);
+    Or(a = RAM08, b = RAM916, out = loadRAM);
+
+    // Load into the correct parts
+    RAM16K(in = in, load = loadRAM, address = address[0..13], out = outRAM);
+    Screen(in = in, load = loadScreen, address = address[0..12], out = outScreen);
+    Keyboard(out = outKeyboard);
+
+    // Keyboard is used when the 15th and 14th bits are both 1
+    // Screen is used when the 15th bit is 1 and 14th bit is 0
+    // RAM is used when the 15th bit is 0
+    Mux4Way16(a = outRAM, b = outRAM, c = outScreen, d = outKeyboard, sel = address[13..14], out = out);
 }

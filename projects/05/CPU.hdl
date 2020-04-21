@@ -40,4 +40,54 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+    // instruction = i xx a cccccc ddd jjj
+    // i = 0: A-instruction, i = 1: C-instruction
+    // a = 0: Operations on D and A, a = 1: Operations on D and M
+    // cccccc: specifies a computation
+    // ddd: specifies where to store computed value
+    // jjj: specifies where to jump to
+
+    // When to perform A-instruction and when to perform C-instruction:
+    Not(in = instruction[15], out = doA);
+    Not(in = doA, out = doC);
+    
+    // When to load A-register: when A-instruction is performed
+    //                          when C-instruction is performed and destination is A register
+    And(a = doC, b = instruction[5], out = destA);
+    Or(a = doA, b = destA, out = loadA);
+
+    // What to load A-register with: A-instruction, or result of ALU (C-instruction)
+    Mux16(a = instruction, b = result, sel = doC, out = forAReg);
+    ARegister(in = forAReg, load = loadA, out[0..14] = addressM, out = valueA);
+
+    // When to load D-register: when C-instruction is performed and destination is D register
+    And(a = doC, b = instruction[4], out = loadD);
+    DRegister(in = result, load = loadD, out = valueD);
+
+    // Either operate on A or operate on M[A] (where M[A] = inM)
+    Mux16(a = valueA, b = inM, sel = instruction[12], out = AorM);
+
+    // Use ALU:
+    ALU(x = valueD, y = AorM, zx = instruction[11], nx = instruction[10], 
+        zy = instruction[9], ny = instruction[8], f = instruction[7], 
+        no = instruction[6], out = result, out = outM, zr = resultZero, ng = resultNeg);
+    
+    // When to write to M: C-instruction is performed and destination is Memory[A]
+    And(a = doC, b = instruction[3], out = toWriteM, out = writeM);
+    // Register(in = addrM, load = toWriteM, out = addressM);
+
+    // When to jump: Only for C-instructions!
+    Not(in = resultNeg, out = zeroOrPos);
+    Not(in = resultZero, out = notZero);
+    And(a = zeroOrPos, b = notZero, out = resultPos);
+    And(a = resultPos, b = instruction[0], out = JGT);
+    And(a = resultZero, b = instruction[1], out = JEQ);
+    And(a = resultNeg, b = instruction[2], out = JLT);
+    Or(a = JGT, b = JLT, out = JNE);
+    Or(a = JEQ, b = JNE, out = JMP);
+    And(a = doC, b = JMP, out = jump);
+    Not(in = jump, out = next);
+
+    // Program counter:
+    PC(in = valueA, load = jump, inc = next, reset = reset, out[0..14] = pc);    
 }
